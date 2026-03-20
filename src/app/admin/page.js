@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 import { 
   Plus, Trash2, Edit3, X, Save, Package, LayoutDashboard, Settings, 
@@ -241,8 +242,8 @@ export default function AdminPage() {
                       <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest ml-1">Category_Node</label>
                       <select required className="w-full p-5 bg-gray-50 border border-gray-100 rounded-2xl text-xs font-black uppercase outline-none focus:ring-4 focus:ring-blue-100 transition-all cursor-pointer appearance-none" value={editingProduct ? editingProduct.category : newProduct.category} onChange={(e) => editingProduct ? setEditingProduct({...editingProduct, category: e.target.value}) : setNewProduct({...newProduct, category: e.target.value})}>
                          <option value="">SELECT_NODE</option>
-                         <option value="Men's Clothing">MEN'S_CLOTHING</option>
-                         <option value="Women's Clothing">WOMEN'S_CLOTHING</option>
+                         <option value="Men&apos;s Clothing">MEN&apos;S_CLOTHING</option>
+                         <option value="Women&apos;s Clothing">WOMEN&apos;S_CLOTHING</option>
                          <option value="Electronics">ELECTRONICS_ARCHIVE</option>
                          <option value="Other">OTHER_SELECTIONS</option>
                       </select>
@@ -290,8 +291,8 @@ export default function AdminPage() {
                                <td className="p-8"><span className="px-3 py-1 bg-gray-100 rounded-lg text-[9px] font-black uppercase tracking-widest text-gray-500">#{p.id.slice(0, 8)}</span></td>
                                <td className="p-8">
                                   <div className="flex items-center gap-4">
-                                     <div className="w-10 h-10 bg-white border border-gray-100 rounded-xl overflow-hidden shrink-0 flex items-center justify-center">
-                                       {p.image_url?.startsWith('http') ? <img src={p.image_url} className="w-full h-full object-cover" /> : <span className="text-xl grayscale opacity-10">{p.image_url || '📦'}</span>}
+                                      <div className="w-10 h-10 bg-white border border-gray-100 rounded-xl overflow-hidden shrink-0 flex items-center justify-center relative">
+                                       {p.image_url?.startsWith('http') ? <Image src={p.image_url} alt={p.name} fill className="object-cover" /> : <span className="text-xl grayscale opacity-10">{p.image_url || '📦'}</span>}
                                      </div>
                                      <span className="text-xs font-black uppercase tracking-widest text-gray-900 line-clamp-1">{p.name}</span>
                                   </div>
