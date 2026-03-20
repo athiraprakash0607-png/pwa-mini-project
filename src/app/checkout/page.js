@@ -80,7 +80,7 @@ function CheckoutContent() {
             <div className="bg-white p-6 md:p-10 rounded-[2rem] md:rounded-[2.5rem] shadow-xl shadow-gray-200/40 border border-gray-100">
               <div className="flex items-center gap-4 mb-8 md:mb-12">
                 <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center">
-                  <Truck size={20} md:size={24} />
+                  <Truck size={24} />
                 </div>
                 <div>
                    <h1 className="text-xl md:text-2xl font-black italic uppercase tracking-tighter">Final_Logistics</h1>
