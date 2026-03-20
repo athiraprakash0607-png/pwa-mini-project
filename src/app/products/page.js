@@ -1,11 +1,11 @@
 'use client';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { ShoppingBag, Zap, Laptop, User, UserCheck, Search } from 'lucide-react';
 import Image from 'next/image';
 
-export default function ProductsPage() {
+function ProductsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const categoryFilter = searchParams.get('category');
@@ -192,6 +192,14 @@ export default function ProductsPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function ProductsPage() {
+  return (
+    <Suspense fallback={<div className="h-screen flex items-center justify-center">Loading...</div>}>
+      <ProductsContent />
+    </Suspense>
   );
 }
 

@@ -1,10 +1,10 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { User, Mail, LogOut, Lock, UserPlus, LogIn, ShoppingBag, KeyRound, ShieldCheck } from 'lucide-react';
 
-export default function ProfilePage() {
+function ProfileContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [session, setSession] = useState(null);
@@ -249,10 +249,18 @@ export default function ProfilePage() {
               <button onClick={() => setView('register')} className="text-[11px] font-black text-blue-600 hover:underline transition-colors uppercase tracking-widest">Create New Identity</button>
             </>
           ) : (
-            <button onClick={() => { setView('login'); setMessage({ text: '', type: '' }); }} className="text-[11px] font-black text-blue-600 hover:underline transition-colors uppercase tracking-widest">Back to Sign In</button>
+            <button onClick={() => { setView('login'); setMessage({ text: '', type: '' }); }} className="text-[11px) font-black text-blue-600 hover:underline transition-colors uppercase tracking-widest">Back to Sign In</button>
           )}
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ProfilePage() {
+  return (
+    <Suspense fallback={<div className="h-screen flex items-center justify-center">Loading...</div>}>
+      <ProfileContent />
+    </Suspense>
   );
 }
