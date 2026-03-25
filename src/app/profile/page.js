@@ -15,6 +15,8 @@ function ProfileContent() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [userOrders, setUserOrders] = useState([]);
+  const [showOrders, setShowOrders] = useState(false);
   const [message, setMessage] = useState({ text: '', type: '' });
 
   // 1. URL Parameter Sync
@@ -29,6 +31,9 @@ function ProfileContent() {
     // 2. Initial Session Check
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
+      if (session) {
+        fetchUserOrders(session.user.id);
+      }
       setLoading(false);
       
       // 2. Check for manual reset hash in URL
@@ -40,6 +45,7 @@ function ProfileContent() {
     // 3. Auth State Observer
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
+      if (session) fetchUserOrders(session.user.id);
       if (_event === 'PASSWORD_RECOVERY') {
         setView('update');
       }
@@ -108,6 +114,16 @@ function ProfileContent() {
     await supabase.auth.signOut();
   };
 
+  const fetchUserOrders = async (userId) => {
+    const { data, error } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+    
+    if (!error) setUserOrders(data || []);
+  };
+
   if (loading && !message.text) {
     return (
       <div className="flex h-[70vh] items-center justify-center">
@@ -135,23 +151,60 @@ function ProfileContent() {
           </div>
           
           <div className="p-6 md:p-10">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
-              <div className="p-6 border border-gray-100 rounded-2xl hover:bg-gray-50 transition-colors cursor-pointer text-center group">
-                <ShoppingBag className="text-blue-600 mb-3 mx-auto group-hover:scale-110 transition-transform" />
-                <h3 className="text-[10px] font-black uppercase tracking-widest leading-none">Orders</h3>
-                <p className="text-[9px] text-gray-400 mt-1.5 uppercase font-bold tracking-widest">Purchase Status</p>
+            {showOrders ? (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between mb-8">
+                  <h3 className="text-sm font-black uppercase tracking-[0.3em]">Purchase_History</h3>
+                  <button onClick={() => setShowOrders(false)} className="text-[10px] font-black uppercase tracking-widest text-blue-600 hover:underline">Back_to_Node</button>
+                </div>
+                
+                <div className="space-y-4">
+                  {userOrders.length > 0 ? (
+                    userOrders.map((order) => (
+                      <div key={order.id} className="p-5 border border-gray-100 rounded-2xl flex items-center justify-between group hover:bg-gray-50 transition-all">
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center">
+                            <ShoppingBag size={18} />
+                          </div>
+                          <div>
+                            <p className="text-xs font-black uppercase tracking-widest">{order.product_name}</p>
+                            <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">#{order.id.slice(0, 8)} • {new Date(order.created_at).toLocaleDateString()}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-black italic tracking-tighter">${order.product_price?.toFixed(2)}</p>
+                          <span className={`text-[8px] font-black uppercase tracking-widest ${order.status === 'completed' ? 'text-green-600' : 'text-yellow-600'}`}>
+                            {order.status}
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="py-12 text-center">
+                      <p className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-300">No_Archives_Found</p>
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="p-6 border border-gray-100 rounded-2xl hover:bg-gray-50 transition-colors cursor-pointer text-center group">
-                <User className="text-blue-600 mb-3 mx-auto group-hover:scale-110 transition-transform" />
-                <h3 className="text-[10px] font-black uppercase tracking-widest leading-none">Profile</h3>
-                <p className="text-[9px] text-gray-400 mt-1.5 uppercase font-bold tracking-widest">Identity Config</p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+                <div className="p-6 border border-gray-100 rounded-2xl hover:bg-gray-50 transition-colors cursor-pointer text-center group" onClick={() => setShowOrders(true)}>
+                  <ShoppingBag className="text-blue-600 mb-3 mx-auto group-hover:scale-110 transition-transform" />
+                  <h3 className="text-[10px] font-black uppercase tracking-widest leading-none">Orders</h3>
+                  <p className="text-[9px] text-gray-400 mt-1.5 uppercase font-bold tracking-widest">Purchase Status</p>
+                </div>
+                <div className="p-6 border border-gray-100 rounded-2xl hover:bg-gray-50 transition-colors cursor-pointer text-center group">
+                  <User className="text-blue-600 mb-3 mx-auto group-hover:scale-110 transition-transform" />
+                  <h3 className="text-[10px] font-black uppercase tracking-widest leading-none">Profile</h3>
+                  <p className="text-[9px] text-gray-400 mt-1.5 uppercase font-bold tracking-widest">Identity Config</p>
+                </div>
+                <div className="sm:col-span-2 md:col-span-1 p-6 border border-gray-100 rounded-2xl hover:bg-red-50 transition-colors cursor-pointer text-center group border-dashed" onClick={handleLogout}>
+                  <LogOut className="text-red-500 mb-3 mx-auto group-hover:scale-110 transition-transform" />
+                  <h3 className="text-[10px] font-black uppercase tracking-widest text-red-500 leading-none">Sign_Out</h3>
+                  <p className="text-[9px] text-gray-400 mt-1.5 uppercase font-bold tracking-widest">Secure Termination</p>
+                </div>
               </div>
-              <div className="sm:col-span-2 md:col-span-1 p-6 border border-gray-100 rounded-2xl hover:bg-red-50 transition-colors cursor-pointer text-center group border-dashed" onClick={handleLogout}>
-                <LogOut className="text-red-500 mb-3 mx-auto group-hover:scale-110 transition-transform" />
-                <h3 className="text-[10px] font-black uppercase tracking-widest text-red-500 leading-none">Sign_Out</h3>
-                <p className="text-[9px] text-gray-400 mt-1.5 uppercase font-bold tracking-widest">Secure Termination</p>
-              </div>
-            </div>
+            )}
           </div>
         </div>
       </div>

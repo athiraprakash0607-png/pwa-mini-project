@@ -12,6 +12,7 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState('inventory');
   const [products, setProducts] = useState([]);
   const [users, setUsers] = useState([]);
+  const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [newProduct, setNewProduct] = useState({ name: '', price: '', category: '', image_url: '', description: '' });
   const [editingProduct, setEditingProduct] = useState(null);
@@ -31,6 +32,7 @@ export default function AdminPage() {
       if (isAuth) {
         fetchProducts();
         fetchUsers();
+        fetchOrders();
       }
     });
 
@@ -52,6 +54,7 @@ export default function AdminPage() {
       localStorage.setItem('shoppify_admin_auth', 'true');
       fetchProducts();
       fetchUsers();
+      fetchOrders();
     } else {
       setAuthError('INVALID_CREDENTIALS: Access Denied.');
     }
@@ -84,6 +87,16 @@ export default function AdminPage() {
         { id: '3', email: 'support@shoppify.net', username: 'Support_Proxy', role: 'SUPPORT', status: 'HYBERNATED' }
       ]);
     }
+  }
+  
+  async function fetchOrders() {
+    const { data, error } = await supabase
+      .from('orders')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (!error) setOrders(data || []);
+    else console.error('Error fetching orders:', error);
   }
 
   async function handleImageUpload(e, isEditing = false) {
@@ -438,9 +451,70 @@ export default function AdminPage() {
              )}
 
              {activeTab === 'transactions' && (
-                <div className="py-20 text-center space-y-4">
-                   <ShoppingBag size={48} className="mx-auto text-gray-200" />
-                   <h2 className="text-xl font-black italic uppercase text-gray-300">Transaction_Sync_Developing</h2>
+                <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                   <div className="flex items-center gap-6">
+                      <div className="w-16 h-16 bg-blue-600 text-white rounded-3xl flex items-center justify-center shadow-2xl shadow-blue-600/20 ring-8 ring-blue-50">
+                         <ShoppingBag size={32} />
+                      </div>
+                      <div>
+                         <h2 className="text-3xl font-black italic uppercase tracking-tighter">Transaction_Registry</h2>
+                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.4em] mt-1">Live Order & Logistics Database</p>
+                      </div>
+                   </div>
+
+                   <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-2xl shadow-gray-200/50 overflow-hidden">
+                      <div className="overflow-x-auto">
+                         <table className="w-full text-left">
+                            <thead className="bg-gray-50 border-b border-gray-100">
+                               <tr>
+                                  <th className="p-8 text-[10px] font-black uppercase tracking-widest text-gray-400">Order_ID</th>
+                                  <th className="p-8 text-[10px] font-black uppercase tracking-widest text-gray-400">Customer</th>
+                                  <th className="p-8 text-[10px] font-black uppercase tracking-widest text-gray-400">Product_Details</th>
+                                  <th className="p-8 text-[10px] font-black uppercase tracking-widest text-gray-400">Value (USD)</th>
+                                  <th className="p-8 text-[10px] font-black uppercase tracking-widest text-gray-400">Status</th>
+                                  <th className="p-8 text-[10px] font-black uppercase tracking-widest text-gray-400 text-right">Commit_Date</th>
+                               </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-50">
+                               {orders.map((order) => (
+                                  <tr key={order.id} className="hover:bg-gray-50/20 transition-colors group">
+                                     <td className="p-8 font-mono text-[10px] text-gray-400">#{order.id.slice(0, 8)}</td>
+                                     <td className="p-8">
+                                        <div className="flex flex-col">
+                                           <span className="text-xs font-black uppercase tracking-widest">{order.full_name}</span>
+                                           <span className="text-[9px] text-gray-400 font-bold">{order.email}</span>
+                                        </div>
+                                     </td>
+                                     <td className="p-8">
+                                        <div className="flex flex-col">
+                                           <span className="text-xs font-black uppercase tracking-widest text-blue-600">{order.product_name}</span>
+                                           <span className="text-[9px] text-gray-400 font-bold uppercase tracking-tight">{order.city}, {order.zip}</span>
+                                        </div>
+                                     </td>
+                                     <td className="p-8">
+                                        <span className="text-sm font-black italic tracking-tighter">${order.product_price?.toFixed(2)}</span>
+                                     </td>
+                                     <td className="p-8">
+                                        <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${order.status === 'completed' ? 'bg-green-50 text-green-600' : 'bg-yellow-50 text-yellow-600'}`}>
+                                           {order.status}
+                                        </span>
+                                     </td>
+                                     <td className="p-8 text-right font-mono text-[10px] text-gray-400">
+                                        {new Date(order.created_at).toLocaleDateString()}
+                                     </td>
+                                  </tr>
+                               ))}
+                               {orders.length === 0 && (
+                                  <tr>
+                                     <td colSpan="6" className="p-20 text-center">
+                                        <p className="text-[10px] font-black uppercase tracking-[0.5em] text-gray-300 animate-pulse">NO_TRANSACTION_DATA_SYNCED</p>
+                                     </td>
+                                  </tr>
+                               )}
+                            </tbody>
+                         </table>
+                      </div>
+                   </div>
                 </div>
              )}
           </div>

@@ -11,6 +11,7 @@ function CheckoutContent() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   // Delivery Form State
   const [formData, setFormData] = useState({
@@ -49,12 +50,34 @@ function CheckoutContent() {
     e.preventDefault();
     setIsProcessing(true);
     
-    // In a real app, we would insert into the 'orders' table here.
-    // For now, we simulate a successful transaction.
-    setTimeout(() => {
-      alert('ORDER_SYNC_SUCCESSFUL: Your package has been reserved and is being routed for dispatch!');
-      router.push('/profile');
-    }, 2000);
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .insert([
+          {
+            user_id: user.id,
+            product_id: product.id,
+            product_name: product.name,
+            product_price: product.price,
+            full_name: formData.fullName,
+            email: formData.email,
+            phone: formData.phone,
+            address: formData.address,
+            city: formData.city,
+            zip: formData.zip,
+            status: 'pending'
+          }
+        ]);
+
+      if (error) throw error;
+
+      setShowSuccess(true);
+    } catch (error) {
+      console.error('Order Error:', error);
+      alert('ORDER_SYNC_FAILED: ' + error.message);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   if (loading) return (
@@ -67,7 +90,40 @@ function CheckoutContent() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50/50 py-24 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50/50 py-24 px-4 sm:px-6 lg:px-8 relative">
+      {/* Success Modal */}
+      {showSuccess && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-md animate-in fade-in duration-500"></div>
+          <div className="relative bg-white max-w-lg w-full p-10 md:p-14 rounded-[3rem] shadow-2xl border border-gray-100 text-center animate-in zoom-in-95 fade-in duration-500">
+            <div className="w-24 h-24 bg-blue-600 text-white rounded-[2.5rem] flex items-center justify-center mx-auto mb-10 shadow-2xl shadow-blue-600/30 animate-bounce">
+              <ShieldCheck size={48} />
+            </div>
+            
+            <h2 className="text-3xl font-black italic uppercase tracking-tighter mb-4">Order_Sync_Successful</h2>
+            <p className="text-[11px] font-bold text-gray-500 uppercase tracking-[0.2em] leading-relaxed mb-12">
+              Your archival package has been reserved and is currently being routed for priority dispatch. 
+              Inventory nodes have been updated across the network.
+            </p>
+
+            <div className="space-y-4">
+              <button 
+                onClick={() => router.push('/profile')}
+                className="w-full py-5 bg-gray-900 text-white text-[10px] font-black uppercase tracking-[0.3em] rounded-2xl hover:bg-blue-600 transition-all active:scale-95 shadow-xl shadow-gray-900/20"
+              >
+                Go_to_Profile
+              </button>
+              <button 
+                onClick={() => setShowSuccess(false)}
+                className="w-full py-5 text-gray-400 text-[9px] font-black uppercase tracking-[0.4em] hover:text-gray-900 transition-colors"
+              >
+                Return_to_Hub
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-7xl mx-auto">
         {/* Back Button */}
         <button onClick={() => router.back()} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-blue-600 mb-12 transition-colors">
