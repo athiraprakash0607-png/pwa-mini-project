@@ -39,9 +39,12 @@ self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
   const url = new URL(event.request.url);
+  const isLocalResource = url.origin === self.location.origin;
+  const isSupabaseAPI = url.hostname.includes('supabase.co');
+  const isImage = event.request.destination === 'image';
 
-  // Strategy: Stale-While-Revalidate for local assets
-  if (url.origin === self.location.origin) {
+  // Strategy: Stale-While-Revalidate for local assets and API data
+  if (isLocalResource || isSupabaseAPI) {
     event.respondWith(
       caches.match(event.request).then((cachedResponse) => {
         const fetchPromise = fetch(event.request).then((networkResponse) => {
@@ -57,12 +60,13 @@ self.addEventListener('fetch', (event) => {
           if (event.request.mode === 'navigate') {
             return caches.match('/offline');
           }
+          return cachedResponse; // Return cached API data if network fails
         });
 
         return cachedResponse || fetchPromise;
       })
     );
-  } else if (event.request.destination === 'image') {
+  } else if (isImage) {
     // Strategy: Cache-First for images
     event.respondWith(
       caches.match(event.request).then((cachedResponse) => {
