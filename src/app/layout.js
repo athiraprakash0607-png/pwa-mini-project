@@ -2,18 +2,26 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import NetworkStatus from "@/components/NetworkStatus";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-  title: "Lumina | Minimalist Living",
-  description: "A premium minimalist e-commerce platform built with Next.js.",
+  title: "SHOPPIFY | Premium Store Node",
+  description: "A premium minimalist e-commerce platform with PWA Offline Failure Handling using Next.js and Supabase.",
+  manifest: "/manifest.json",
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/apple-icon.png",
+  },
+  themeColor: "#2563eb",
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className={`${inter.className} min-h-screen flex flex-col relative antialiased`}>
+        <NetworkStatus />
         {/* Subtle Decorative Accents (Minimalist Greys) */}
         <div className="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-slate-200/40 dark:bg-slate-800/20 rounded-full blur-[120px] -z-10 pointer-events-none"></div>
         <div className="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-slate-100/40 dark:bg-slate-900/20 rounded-full blur-[120px] -z-10 pointer-events-none"></div>

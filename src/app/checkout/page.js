@@ -2,8 +2,9 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { CreditCard, Truck, ShieldCheck, ArrowLeft, Package, MapPin, Mail, Phone, User as UserIcon } from 'lucide-react';
+import { CreditCard, Truck, ShieldCheck, ArrowLeft, Package, MapPin, Mail, Phone, User as UserIcon, WifiOff } from 'lucide-react';
 import Image from 'next/image';
+import { saveOfflineOrder } from '@/lib/offline-sync';
 
 function CheckoutContent() {
   const router = useRouter();
@@ -46,35 +47,59 @@ function CheckoutContent() {
     });
   }, [router]);
 
+  const [isOfflineMode, setIsOfflineMode] = useState(false);
+
   const handleOrder = async (e) => {
     e.preventDefault();
     setIsProcessing(true);
+    setIsOfflineMode(false);
     
+    const orderData = {
+      user_id: user.id,
+      product_id: product.id,
+      product_name: product.name,
+      product_price: product.price,
+      full_name: formData.fullName,
+      email: formData.email,
+      phone: formData.phone,
+      address: formData.address,
+      city: formData.city,
+      zip: formData.zip,
+      status: 'pending'
+    };
+
     try {
+      if (!navigator.onLine) {
+        await saveOfflineOrder(orderData);
+        setIsOfflineMode(true);
+        setShowSuccess(true);
+        return;
+      }
+
       const { error } = await supabase
         .from('orders')
-        .insert([
-          {
-            user_id: user.id,
-            product_id: product.id,
-            product_name: product.name,
-            product_price: product.price,
-            full_name: formData.fullName,
-            email: formData.email,
-            phone: formData.phone,
-            address: formData.address,
-            city: formData.city,
-            zip: formData.zip,
-            status: 'pending'
-          }
-        ]);
+        .insert([orderData]);
 
-      if (error) throw error;
+      if (error) {
+        // Fallback to offline storage if server insert fails (e.g. timeout)
+        console.warn('Network error, staging locally');
+        await saveOfflineOrder(orderData);
+        setIsOfflineMode(true);
+        setShowSuccess(true);
+        return;
+      }
 
       setShowSuccess(true);
     } catch (error) {
       console.error('Order Error:', error);
-      alert('ORDER_SYNC_FAILED: ' + error.message);
+      // Attempt to save offline as a fallback for ANY failure
+      try {
+         await saveOfflineOrder(orderData);
+         setIsOfflineMode(true);
+         setShowSuccess(true);
+      } catch (idbErr) {
+         alert('ORDER_SYNC_FAILED: Critical system error.');
+      }
     } finally {
       setIsProcessing(false);
     }
@@ -96,14 +121,19 @@ function CheckoutContent() {
         <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
           <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-md animate-in fade-in duration-500"></div>
           <div className="relative bg-white max-w-lg w-full p-10 md:p-14 rounded-[3rem] shadow-2xl border border-gray-100 text-center animate-in zoom-in-95 fade-in duration-500">
-            <div className="w-24 h-24 bg-blue-600 text-white rounded-[2.5rem] flex items-center justify-center mx-auto mb-10 shadow-2xl shadow-blue-600/30 animate-bounce">
-              <ShieldCheck size={48} />
+            <div className={`w-24 h-24 ${isOfflineMode ? 'bg-orange-500' : 'bg-blue-600'} text-white rounded-[2.5rem] flex items-center justify-center mx-auto mb-10 shadow-2xl ${isOfflineMode ? 'shadow-orange-500/30' : 'shadow-blue-600/30'} animate-bounce`}>
+              {isOfflineMode ? <WifiOff size={48} /> : <ShieldCheck size={48} />}
             </div>
             
-            <h2 className="text-3xl font-black italic uppercase tracking-tighter mb-4">Order_Sync_Successful</h2>
+            <h2 className="text-3xl font-black italic uppercase tracking-tighter mb-4">
+               {isOfflineMode ? 'Order_Staged_Offline' : 'Order_Sync_Successful'}
+            </h2>
             <p className="text-[11px] font-bold text-gray-500 uppercase tracking-[0.2em] leading-relaxed mb-12">
-              Your archival package has been reserved and is currently being routed for priority dispatch. 
-              Inventory nodes have been updated across the network.
+              {isOfflineMode ? (
+                "INTERRUPT_DETECTED: Your order has been securely cached in your browser's persistent node. It will automatically synchronize with our archival network once connectivity is restored."
+              ) : (
+                "Your archival package has been reserved and is currently being routed for priority dispatch. Inventory nodes have been updated across the network."
+              )}
             </p>
 
             <div className="space-y-4">
