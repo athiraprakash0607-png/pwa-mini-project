@@ -34,7 +34,14 @@ function ProductsContent() {
       return;
     }
     
-    if (type === 'cart') {
+    // Offline Check
+    const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+
+    if (type === 'cart' || (type === 'buy' && isOffline)) {
+      if (type === 'buy' && isOffline) {
+        alert("NETWORK_STABILITY_FAILURE: You are currently offline. Immediate checkout is suspended; unit has been rerouted to your ARCHIVAL_CART for local staging.");
+      }
+
       const existingCart = JSON.parse(localStorage.getItem('shoppify_cart') || '[]');
       const itemIndex = existingCart.findIndex(item => item.id === product.id);
       
@@ -45,7 +52,10 @@ function ProductsContent() {
       }
       
       localStorage.setItem('shoppify_cart', JSON.stringify(existingCart));
-      alert(`UNIT_RESERVED: ${product.name.toUpperCase()} has been staged in your archival cart.`);
+      
+      if (type === 'cart') {
+        alert(`UNIT_RESERVED: ${product.name.toUpperCase()} has been staged in your archival cart.`);
+      }
       return;
     }
 
